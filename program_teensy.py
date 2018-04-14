@@ -129,7 +129,7 @@ while i < n:
         # write
         addr = [i & 0xFF, (i >> 8) & 0xFF, (i >> 16) & 0xFF]
         d = addr + ([0] * 61) + d
-        s = str(bytearray(d))
+        # s = str(bytearray(d))
         c = 0
         while t > 0:
             try:
