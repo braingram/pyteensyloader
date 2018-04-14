@@ -8,6 +8,29 @@ import usb.core
 
 fn = 'teensy_reboot_test.ino.TEENSY31.hex'
 
+"""
+{"at90usb162",   15872,   128},
+{"atmega32u4",   32256,   128},
+{"at90usb646",   64512,   256},
+{"at90usb1286", 130048,   256},
+#if defined(USE_LIBUSB) || defined(USE_APPLE_IOKIT) || defined(USE_WIN32)
+{"mkl26z64",     63488,   512},
+{"mk20dx128",   131072,  1024},
+{"mk20dx256",   262144,  1024},
+{"mk66fx1m0",  1048576,  1024},
+{"mk64fx512",   524288,  1024},
+
+// Add duplicates that match friendly Teensy Names
+// Match board names in boards.txt
+{"TEENSY2",   32256,   128},
+{"TEENSY2PP", 130048,   256},
+{"TEENSYLC",     63488,   512},
+{"TEENSY30",   131072,  1024},
+{"TEENSY31",   262144,  1024},
+{"TEENSY35",   524288,  1024},
+{"TEENSY36",  1048576,  1024},
+"""
+
 # Teensy 3.2
 code_size = 262144
 block_size = 1024
@@ -31,7 +54,7 @@ def read_intel_hex(fn, code_size):
             if rtype == 0:  # data
                 ei = 9 + bc * 2
                 ld = l[9:ei]
-                cs = int(l[ei:ei+2], 16)  # TODO check checksum
+                cs = int(l[ei:ei+2], 16)
                 ld = [int(i + j, 16) for (i, j) in zip(ld[::2], ld[1::2])]
                 s = sum(ld) + bc + rtype + (addr & 0xFF) + (addr >> 8)
                 s = (((~(s & 0xFF) & 0xFF)) + 1) & 0xFF
@@ -74,10 +97,15 @@ if len(devs):
     time.sleep(1.0)
 
 # find HalfKay HID teensy
-dev = usb.core.find(idVendor=0x16C0, idProduct=0x0478)
+t = 5
+while t > 0:
+    dev = usb.core.find(idVendor=0x16C0, idProduct=0x0478)
+    if dev is not None:
+        break
+    time.sleep(0.1)
+    t -= 0.1
 if dev is None:
     print("No bootloader found")
-    # TODO wait? recheck?
     sys.exit(1)
 if dev.is_kernel_driver_active(0):
     dev.detach_kernel_driver(0)
@@ -95,7 +123,6 @@ while i < n:
     d = data[i:i+block_size]
     m = mask[i:i+block_size]
     if len(d) < block_size:  # pad block
-        print("padding block")
         d += [0xFF] * (block_size - len(d))
         m += [False] * (block_size - len(d))
     if any(m) or (i != 0):
@@ -103,8 +130,6 @@ while i < n:
         addr = [i & 0xFF, (i >> 8) & 0xFF, (i >> 16) & 0xFF]
         d = addr + ([0] * 61) + d
         s = str(bytearray(d))
-        #print(i, addr, len(d), len(s), repr(s))
-        #print([hex(v) for v in d[64:74]])
         c = 0
         while t > 0:
             try:
@@ -123,10 +148,8 @@ while i < n:
 
 # boot
 print("Booting...")
-#block = '\x00' * (block_size + 2)
 block = '\x00' * (block_size + 64)
 block = '\xff\xff\xff' + block[3:]
-#print(len(block), block)
 t = 5000
 while t > 0:
     try:
@@ -135,5 +158,3 @@ while t > 0:
     except usb.core.USBError:
         time.sleep(0.01)
         t -= 10
-#endpoint = dev[0][(0, 0)][0]
-#endpoint.write(block, 5000)
