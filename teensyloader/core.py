@@ -87,7 +87,11 @@ def read_intel_hex(fn, code_size):
 def organize_by_serial(devs, serial=None):
     r = {}
     for d in devs:
-        r[d.serial_number] = d
+        # TODO check for duplicates
+        if hasattr(d, 'serial_number'):
+            r[d.serial_number] = d
+        #elif hasattr(d, 'iSerialNumber'):
+        #    r[d.iSerialNumber] = d
     if serial is None:
         return r
     if isinstance(serial, (str, unicode)):
@@ -273,11 +277,13 @@ def program_teensy(fn, mcu=None, dev=None, autoboot=True):
         except IOError:
             dev = get_single_teensy(find_serial_teensies)
             dev = soft_reboot_serial(dev)
+            time.sleep(1.0)
     if isinstance(dev, (str, unicode)):
         try:
             dev = find_hid_teensies(dev)
         except IOError:
             dev = find_serial_teensies(dev)
             dev = soft_reboot_serial(dev)
+            time.sleep(1.0)
 
     program_hid_device(fn, mcu, dev, autoboot=autoboot)

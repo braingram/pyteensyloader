@@ -50,11 +50,13 @@ if args.command == "list":
 elif args.command == "reset":
     if args.device is None:
         dev = [core.get_single_teensy('serial', serial_number=True), ]
-    if args.device is not None:
+    else:
         if ',' in args.device:
             dev = [s.strip() for s in args.device.strip().split(",")]
         elif args.device.lower() == 'all':
             dev = core.find_serial_teensies().keys()
+        else:
+            dev = [args.device, ]
     for d in dev:
         print("Resetting %s... " % d, end="")
         core.reset_teensy(d, args.mcu)
@@ -64,13 +66,15 @@ elif args.command == "program":
         raise ValueError("firmware filename is required to program")
     if args.device is None:
         dev = [core.get_single_teensy(serial_number=True), ]
-    if args.device is not None:
+    else:
         if ',' in args.device:
             dev = [s.strip() for s in args.device.strip().split(",")]
         elif args.device.lower() == 'all':
             dev = (
                 core.find_serial_teensies().keys() +
                 core.find_hid_teensies().keys())
+        else:
+            dev = [args.device, ]
     for d in dev:
         print("Programming %s... " % d, end="")
         core.program_teensy(args.firmware, args.mcu, dev=d)
