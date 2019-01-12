@@ -9,6 +9,7 @@ bDeviceClass: 2: serial, 0: (use interface, which is HID)
 import time
 
 import usb.core
+import usb.util
 
 
 LONG_TIMEOUT = 5000
@@ -90,6 +91,8 @@ def organize_by_serial(devs, serial=None):
         # TODO check for duplicates
         if hasattr(d, 'serial_number'):
             r[d.serial_number] = d
+        elif hasattr(d, 'iSerialNumber'):
+            r[usb.util.get_string(d, 32, d.iSerialNumber)] = d
         #elif hasattr(d, 'iSerialNumber'):
         #    r[d.iSerialNumber] = d
     if serial is None:
