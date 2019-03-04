@@ -6,6 +6,7 @@ HEX auto-detection
 bDeviceClass: 2: serial, 0: (use interface, which is HID)
 """
 
+import inspect
 import time
 
 import usb.core
@@ -38,6 +39,13 @@ mcus["TEENSY35"] = mcus["mk64fx512"]
 mcus["TEENSY36"] = mcus["mk66fx1m0"]
 
 DEFAULT_MCU = "TEENSY32"
+
+
+if 'length' in inspect.getargspec(usb.util.get_string).args:
+    usb_get_string = lambda d, s, langid=None: usb.util.get_string(
+        d, 255, s, langid=langid)
+else:
+    usb_get_string = usb.util.get_string
 
 
 def get_mcu(mcu):
@@ -92,7 +100,7 @@ def organize_by_serial(devs, serial=None):
         if hasattr(d, 'serial_number'):
             r[d.serial_number] = d
         elif hasattr(d, 'iSerialNumber'):
-            r[usb.util.get_string(d, 32, d.iSerialNumber)] = d
+            r[usb_get_string(d, d.iSerialNumber)] = d
         #elif hasattr(d, 'iSerialNumber'):
         #    r[d.iSerialNumber] = d
     if serial is None:
